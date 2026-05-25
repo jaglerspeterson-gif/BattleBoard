@@ -94,6 +94,24 @@ textarea{resize:vertical;min-height:72px}
 .reroll{display:flex;justify-content:center;gap:10px;margin-top:22px}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .spin{display:inline-block;animation:spin .5s linear infinite}
+.vp-names{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.vp-name{text-align:center;font-size:14px;font-weight:600;letter-spacing:1px}
+.vp-totals{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.vp-total{background:var(--bg-el);border:1px solid var(--border);border-radius:6px;padding:16px 10px;text-align:center;transition:border-color .2s,background .2s}
+.vp-total.vp-leading{border-color:var(--gold);background:rgba(201,146,42,.09)}
+.vp-total-num{font-size:54px;font-weight:700;color:var(--goldb);line-height:1;font-variant-numeric:tabular-nums}
+.vp-total-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--textd);margin-top:5px}
+.vp-table{display:flex;flex-direction:column;gap:6px}
+.vp-row{display:grid;grid-template-columns:40px 1fr 1fr;gap:8px;align-items:center;padding:8px 10px;background:var(--bg-el);border:1px solid var(--border);border-radius:4px;transition:border-color .15s,background .15s}
+.vp-row.active{border-color:var(--gold);background:rgba(201,146,42,.06)}
+.vp-round-num{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--textd);text-align:center;text-transform:uppercase;cursor:pointer;padding:6px 0;border-radius:3px}
+.vp-row.active .vp-round-num{color:var(--goldb)}
+.vp-entry{display:flex;align-items:center;justify-content:center;gap:6px}
+.vp-btn{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;color:var(--text);cursor:pointer;font-size:20px;font-family:inherit;width:40px;height:40px;display:flex;align-items:center;justify-content:center;line-height:1;transition:border-color .1s,color .1s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;flex-shrink:0}
+.vp-btn:hover{border-color:var(--gold);color:var(--goldb)}
+.vp-btn:active{transform:scale(.9)}
+.vp-score{font-size:22px;font-weight:700;color:var(--textb);min-width:32px;text-align:center;font-variant-numeric:tabular-nums}
+@media(max-width:480px){.vp-total-num{font-size:42px}.vp-btn{width:36px;height:36px;font-size:18px}}
 </style>
 </head>
 <body>
@@ -110,6 +128,7 @@ textarea{resize:vertical;min-height:72px}
   <button class="tab on" data-tab="randomizer">⚄ Randomize</button>
   <button class="tab" data-tab="vault">🏚 Terrain Vault</button>
   <button class="tab" data-tab="missions">📜 Missions</button>
+  <button class="tab" data-tab="vp">⚔ Score</button>
 </div>
 
 <div class="main" id="main"></div>
@@ -368,28 +387,34 @@ const Storage = {
    of the app ignorant of where data lives — easy to
    layer in a backend / user accounts later.
 ═══════════════════════════════════════════════════ */
-const STORAGE_KEYS = { TERRAIN:'wh40k_terrain', MISSIONS:'wh40k_missions' };
+const STORAGE_KEYS = { TERRAIN:'wh40k_terrain', MISSIONS:'wh40k_missions', VP:'wh40k_vp' };
+
+const VP_DEFAULT = ()=>({p1:'Player 1',p2:'Player 2',rounds:[[0,0],[0,0],[0,0],[0,0],[0,0]],activeRound:0});
 
 const DataService = {
   loadTerrain()      { return Storage.get(STORAGE_KEYS.TERRAIN, []); },
   saveTerrain(data)  { Storage.set(STORAGE_KEYS.TERRAIN, data); },
   loadMissions()     { return Storage.get(STORAGE_KEYS.MISSIONS, []); },
   saveMissions(data) { Storage.set(STORAGE_KEYS.MISSIONS, data); },
+  loadVP()           { return Storage.get(STORAGE_KEYS.VP, VP_DEFAULT()); },
+  saveVP(data)       { Storage.set(STORAGE_KEYS.VP, data); },
   // Future: loadUser(), saveUser(), syncToCloud(), etc.
 };
 
 /* ═══════════════════════════════════════════════════
    APP STATE
 ═══════════════════════════════════════════════════ */
-let state = {tab:'randomizer', terrain:[], customMissions:[], result:null, rolling:false, showMissionForm:false};
+let state = {tab:'randomizer', terrain:[], customMissions:[], result:null, rolling:false, showMissionForm:false, vp:VP_DEFAULT()};
 
 function load() {
   state.terrain = DataService.loadTerrain();
   state.customMissions = DataService.loadMissions();
+  state.vp = DataService.loadVP();
 }
 function save() {
   DataService.saveTerrain(state.terrain);
   DataService.saveMissions(state.customMissions);
+  DataService.saveVP(state.vp);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -818,6 +843,54 @@ function openMapModal(){
 }
 
 /* ═══════════════════════════════════════════════════
+   VP TRACKER
+═══════════════════════════════════════════════════ */
+function renderVP(){
+  const {p1,p2,rounds,activeRound} = state.vp;
+  const p1total = rounds.reduce((s,r)=>s+r[0],0);
+  const p2total = rounds.reduce((s,r)=>s+r[1],0);
+  const tied = p1total===p2total && p1total>0;
+
+  const rows = rounds.map(([s1,s2],i)=>`
+    <div class="vp-row${i===activeRound?' active':''}">
+      <div class="vp-round-num" data-action="vp-set-round" data-r="${i}">R${i+1}</div>
+      <div class="vp-entry">
+        <button class="vp-btn" data-action="vp-dec" data-p="0" data-r="${i}">−</button>
+        <div class="vp-score">${s1}</div>
+        <button class="vp-btn" data-action="vp-inc" data-p="0" data-r="${i}">+</button>
+      </div>
+      <div class="vp-entry">
+        <button class="vp-btn" data-action="vp-dec" data-p="1" data-r="${i}">−</button>
+        <div class="vp-score">${s2}</div>
+        <button class="vp-btn" data-action="vp-inc" data-p="1" data-r="${i}">+</button>
+      </div>
+    </div>`).join('');
+
+  return `
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>⚔ Victory Points</span>
+      <button class="btn btn-d" data-action="vp-reset" style="font-size:11px;padding:5px 12px">↺ New Game</button>
+    </div>
+    <div class="vp-names">
+      <input id="vp-p1" class="vp-name" value="${esc(p1)}" placeholder="Player 1"/>
+      <input id="vp-p2" class="vp-name" value="${esc(p2)}" placeholder="Player 2" style="text-align:right"/>
+    </div>
+    <div class="vp-totals">
+      <div class="vp-total${p1total>p2total?' vp-leading':''}">
+        <div class="vp-total-num">${p1total}</div>
+        <div class="vp-total-label">${p1total>p2total?'▲ Leading':'VP'}</div>
+      </div>
+      <div class="vp-total${p2total>p1total?' vp-leading':''}">
+        <div class="vp-total-num">${p2total}</div>
+        <div class="vp-total-label">${p2total>p1total?'▲ Leading':tied?'Tied':'VP'}</div>
+      </div>
+    </div>
+    <div class="vp-table">${rows}</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════
    RENDER + HELPERS
 ═══════════════════════════════════════════════════ */
 function render(){
@@ -825,6 +898,7 @@ function render(){
   switch(state.tab){
     case 'vault':    main.innerHTML=renderVault(); break;
     case 'missions': main.innerHTML=renderMissions(); break;
+    case 'vp':       main.innerHTML=renderVP(); break;
     default:         main.innerHTML=renderRandomizer(); break;
   }
 }
@@ -887,6 +961,23 @@ document.getElementById('main').addEventListener('click',e=>{
     state.showMissionForm=false; save(); render();
   }
   if(action==='del-mission'){state.customMissions=state.customMissions.filter(m=>String(m.id)!==el.dataset.id);save();render();}
+  if(action==='vp-inc'){
+    const p=+el.dataset.p, r=+el.dataset.r;
+    state.vp.rounds[r][p]++;
+    save(); render();
+  }
+  if(action==='vp-dec'){
+    const p=+el.dataset.p, r=+el.dataset.r;
+    state.vp.rounds[r][p]=Math.max(0,state.vp.rounds[r][p]-1);
+    save(); render();
+  }
+  if(action==='vp-set-round'){
+    state.vp.activeRound=+el.dataset.r;
+    save(); render();
+  }
+  if(action==='vp-reset'){
+    state.vp=VP_DEFAULT(); save(); render();
+  }
 });
 
 document.getElementById('main').addEventListener('keydown',e=>{
@@ -896,6 +987,11 @@ document.getElementById('main').addEventListener('keydown',e=>{
 // After vault tab renders, set default size to match initial type selection
 document.getElementById('main').addEventListener('change',e=>{
   if(e.target.id==='t-type') updateDefaultSize(e.target.value);
+});
+
+document.getElementById('main').addEventListener('input',e=>{
+  if(e.target.id==='vp-p1'){ state.vp.p1=e.target.value; save(); }
+  if(e.target.id==='vp-p2'){ state.vp.p2=e.target.value; save(); }
 });
 
 /* ═══════════════════════════════════════════════════

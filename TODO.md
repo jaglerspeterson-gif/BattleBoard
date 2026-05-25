@@ -67,7 +67,6 @@ index.html             ← shell only, imports app.js
 ### Game Tools
 - [ ] VP tracker — live scoresheet during a game, turn by turn, both players
 - [ ] Secondary objective picker / tracker (pick 3, score each round)
-- [ ] Built-in dice roller
 - [ ] Turn timer with optional clock-chess style per-player time
 - [ ] Command point tracker
 - [ ] Pre-built terrain layout templates from GW publications
