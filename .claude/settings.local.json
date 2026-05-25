@@ -5,7 +5,13 @@
       "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git add .; & $git commit -m \"Add fullscreen map modal with mobile support\"; & $git push)",
       "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git add .; & $git commit -m \"Add VP tracker tab with per-round scoring and persistent state\"; & $git push)",
       "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git add .; & $git commit -m \"Show active mission on Score tab with map button\"; & $git push)",
-      "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git add .; & $git commit -m \"Center both player name inputs on Score tab\"; & $git push)"
+      "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git add .; & $git commit -m \"Center both player name inputs on Score tab\"; & $git push)",
+      "PowerShell(Out-Null *)",
+      "PowerShell(Add-Type -AssemblyName System.IO.Compression; $bytes = [System.IO.File]::ReadAllBytes\\(\"C:\\\\Users\\\\jagle\\\\projects\\\\WarhammerApp\\\\maps\\\\2025_Primary Missions.pdf\"\\); $str = [System.Text.Encoding]::Latin1.GetString\\($bytes\\); $matches = [regex]::Matches\\($str, '\\\\\\(\\([^\\)]{4,80}\\)\\\\\\)'\\); $matches | ForEach-Object { $_.Groups[1].Value } | Where-Object { $_ -match '[a-zA-Z]{3}' } | Select-Object -First 300)",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"C:\\\\Users\\\\jagle\\\\projects\\\\WarhammerApp\\\\maps\\\\2025_Primary Missions.pdf\"\\); $enc = [System.Text.Encoding]::GetEncoding\\(\"iso-8859-1\"\\); $str = $enc.GetString\\($bytes\\); $matches = [regex]::Matches\\($str, '\\\\\\(\\([^\\\\\\)]{4,80}\\)\\\\\\)'\\); $results = $matches | ForEach-Object { $_.Groups[1].Value } | Where-Object { $_ -match '[a-zA-Z ]{5}' -and $_ -notmatch '^[^a-zA-Z]+$' }; $results | Select-Object -First 400)",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"C:\\\\Users\\\\jagle\\\\projects\\\\WarhammerApp\\\\maps\\\\2025_MissionDeck_PrintableSpread.pdf\"\\); $enc = [System.Text.Encoding]::GetEncoding\\(\"iso-8859-1\"\\); $str = $enc.GetString\\($bytes\\); $matches = [regex]::Matches\\($str, '\\\\\\(\\([^\\\\\\)]{4,120}\\)\\\\\\)'\\); $results = $matches | ForEach-Object { $_.Groups[1].Value } | Where-Object { $_ -match '[a-zA-Z ]{6}' -and $_ -notmatch '^[^a-zA-Z]+$' -and $_ -notmatch 'stream' }; $results | Select-Object -First 500)",
+      "WebFetch(domain:wahapedia.ru)",
+      "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git add .; & $git commit -m \"Add 5 new 2025-26 missions \\(Terraform, Unexploded Ordnance, Hidden Supplies, The Ritual, Supply Drop\\) + reroll button at top\"; & $git push)"
     ]
   }
 }
