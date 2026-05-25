@@ -866,7 +866,31 @@ function renderVP(){
       </div>
     </div>`).join('');
 
+  const m = state.result;
+  const missionCard = m ? `
+  <div class="card">
+    <div class="m-head" style="margin-bottom:8px">
+      <div class="m-name">${esc(m.name)}</div>
+      <span class="badge ${m.source==='official'?'b-off':'b-cus'}">${m.source==='official'?'Matched Play':'Custom'}</span>
+    </div>
+    <div class="m-deploy" style="margin-bottom:10px">⚑ ${DEPLOYMENTS[m.deployment]}</div>
+    ${m.primary?`<div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Primary</div>
+    <div style="font-size:14px;color:var(--text);line-height:1.55;margin-bottom:10px">${esc(m.primary)}</div>`:''}
+    ${m.secondaries&&m.secondaries.length?`<div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Secondaries</div>
+    <ul class="obj-list">${m.secondaries.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
+    <div style="margin-top:12px">
+      <button class="btn btn-g" data-action="expand-map" style="font-size:11px;padding:6px 14px">⛶ View Map</button>
+    </div>
+  </div>` : `
+  <div class="card">
+    <div class="empty" style="padding:22px 20px">
+      <div class="empty-icon">⚄</div>
+      <p>No mission selected — go to <strong style="color:var(--goldb)">Randomize</strong> to roll one.</p>
+    </div>
+  </div>`;
+
   return `
+  ${missionCard}
   <div class="card">
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
       <span>⚔ Victory Points</span>

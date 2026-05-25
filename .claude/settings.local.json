@@ -3,7 +3,8 @@
     "allow": [
       "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git remote add origin https://github.com/jaglerspeterson-gif/BattleBoard.git; & $git push -u origin main)",
       "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git add .; & $git commit -m \"Add fullscreen map modal with mobile support\"; & $git push)",
-      "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git add .; & $git commit -m \"Add VP tracker tab with per-round scoring and persistent state\"; & $git push)"
+      "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git add .; & $git commit -m \"Add VP tracker tab with per-round scoring and persistent state\"; & $git push)",
+      "PowerShell($git = \"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\"; & $git add .; & $git commit -m \"Show active mission on Score tab with map button\"; & $git push)"
     ]
   }
 }
