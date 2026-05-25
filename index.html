@@ -70,7 +70,15 @@ textarea{resize:vertical;min-height:72px}
 .obj-list{list-style:none;display:flex;flex-direction:column;gap:5px}
 .obj-list li{padding-left:16px;position:relative;font-size:14px;line-height:1.55}
 .obj-list li::before{content:'▸';color:var(--gold);position:absolute;left:0}
-.map-wrap{background:var(--bg-el);border:1px solid var(--border);border-radius:4px;padding:14px}
+.map-wrap{background:var(--bg-el);border:1px solid var(--border);border-radius:4px;padding:14px;position:relative;cursor:zoom-in}
+.map-expand-hint{position:absolute;bottom:26px;right:10px;background:rgba(13,11,9,.78);color:var(--goldb);font-size:10px;letter-spacing:1px;padding:3px 8px;border-radius:2px;pointer-events:none;font-family:Georgia,serif;border:1px solid var(--brgold);opacity:.85}
+.map-modal{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.map-modal-inner{width:100%;max-width:880px;background:var(--bg-card);border:1px solid var(--brgold);border-radius:6px;padding:16px;position:relative;cursor:default;max-height:calc(100vh - 32px);overflow-y:auto}
+.map-modal-inner svg{width:100%;height:auto;max-height:62vh;display:block;border-radius:2px}
+.map-modal-title{font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--goldb);margin-bottom:10px;padding-right:44px}
+.map-modal-close{position:absolute;top:10px;right:10px;background:var(--bg-el);border:1px solid var(--border);border-radius:50%;color:var(--goldb);cursor:pointer;font-size:18px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:0;line-height:1;flex-shrink:0}
+.map-modal-close:hover{border-color:var(--gold);background:var(--brgold)}
+@media(max-width:600px){.map-modal{padding:6px}.map-modal-inner{padding:10px;border-radius:4px}.map-modal-inner svg{max-height:52vw}}
 .map-lbl{font-size:11px;color:var(--textd);text-align:center;margin-top:8px;display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
 .slot{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)}
 .slot:last-child{border-bottom:none}
@@ -749,8 +757,9 @@ function renderRandomizer(){
       </div>
       <div>
         <div class="sec-label">Deployment &amp; Terrain Map</div>
-        <div class="map-wrap">
+        <div class="map-wrap" data-action="expand-map">
           ${deploymentSVG(m.deployment, m.objectives, assignments)}
+          <div class="map-expand-hint">⛶ Expand</div>
           <div class="map-lbl">
             <span>🔵 P1 &nbsp;🔴 P2</span>
             <span>⬡ Objectives</span>
@@ -768,6 +777,44 @@ function renderRandomizer(){
     <button class="btn btn-p btn-big" data-action="roll">⚄ Re-roll Mission</button>
     <button class="btn btn-g" data-action="clear">Clear</button>
   </div>`;
+}
+
+/* ═══════════════════════════════════════════════════
+   FULLSCREEN MAP MODAL
+═══════════════════════════════════════════════════ */
+function openMapModal(){
+  if(!state.result) return;
+  const m = state.result;
+  const assignments = computeAssignments(m);
+  const usedTypes = [...new Set(assignments.filter(a=>a.piece).map(a=>a.piece.type))];
+  const legendItems = usedTypes.map(type=>{
+    const v=T_VIS[type]||T_VIS.other;
+    return `<span style="display:inline-flex;align-items:center;gap:4px">
+      <svg width="12" height="10" style="flex-shrink:0"><rect width="12" height="10" fill="${v.fill}" stroke="${v.stroke}" stroke-width="1" rx="1"/></svg>
+      ${T[type]?T[type].label:type}</span>`;
+  }).join('');
+
+  const modal = document.createElement('div');
+  modal.className = 'map-modal';
+  modal.innerHTML = `
+    <div class="map-modal-inner">
+      <button class="map-modal-close">✕</button>
+      <div class="map-modal-title">${esc(m.name)}</div>
+      ${deploymentSVG(m.deployment, m.objectives, assignments)}
+      <div class="map-lbl" style="margin-top:10px">
+        <span>🔵 P1 &nbsp;🔴 P2</span>
+        <span>⬡ Objectives</span>
+        ${legendItems?`<span style="color:var(--textd)">|</span> ${legendItems}`:''}
+      </div>
+    </div>`;
+
+  const close = ()=>{ modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e=>{ if(e.key==='Escape') close(); };
+  modal.addEventListener('click', close);
+  modal.querySelector('.map-modal-inner').addEventListener('click', e=>e.stopPropagation());
+  modal.querySelector('.map-modal-close').addEventListener('click', close);
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(modal);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -801,6 +848,7 @@ document.getElementById('main').addEventListener('click',e=>{
   if(!el) return;
   const action=el.dataset.action;
 
+  if(action==='expand-map'){ openMapModal(); return; }
   if(action==='roll'){
     state.rolling=true; state.result=null; render();
     setTimeout(()=>{

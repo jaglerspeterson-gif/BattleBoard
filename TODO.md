@@ -1,8 +1,8 @@
 # Battle Board — To Do
 
 ## Tasks
-- [ ] Push to GitHub
-- [ ] Set up hosting (GitHub Pages, Netlify, or Vercel — all free)
+- [x] Push to GitHub
+- [x] Set up hosting (Vercel)
 - [ ] Buy a domain name
 - [ ] Make app installable on phone (Progressive Web App / PWA)
 - [ ] Export board layout as a shareable image
