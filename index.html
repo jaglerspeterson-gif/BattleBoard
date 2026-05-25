@@ -404,7 +404,7 @@ const DataService = {
 /* ═══════════════════════════════════════════════════
    APP STATE
 ═══════════════════════════════════════════════════ */
-let state = {tab:'randomizer', terrain:[], customMissions:[], result:null, rolling:false, showMissionForm:false, vp:VP_DEFAULT()};
+let state = {tab:'randomizer', terrain:[], customMissions:[], result:null, rolling:false, showMissionForm:false, vp:VP_DEFAULT(), vpShowPicker:false};
 
 function load() {
   state.terrain = DataService.loadTerrain();
@@ -867,7 +867,29 @@ function renderVP(){
     </div>`).join('');
 
   const m = state.result;
-  const missionCard = m ? `
+  const allMissions = [...MISSIONS,...state.customMissions];
+
+  const missionPicker = `
+  <div class="card">
+    <div class="card-title">📜 Select Mission</div>
+    <div class="frow" style="margin-bottom:0">
+      <div class="field" style="flex:2">
+        <label>Mission</label>
+        <select id="vp-mission-select">
+          <option value="">— pick a mission —</option>
+          ${allMissions.map(ms=>`<option value="${esc(ms.id)}"${m&&m.id===ms.id?' selected':''}>${esc(ms.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="flex:0;align-self:flex-end">
+        <button class="btn btn-p" data-action="vp-roll-mission">⚄ Random</button>
+      </div>
+      ${m?`<div class="field" style="flex:0;align-self:flex-end">
+        <button class="btn btn-g" data-action="vp-cancel-picker">Cancel</button>
+      </div>`:''}
+    </div>
+  </div>`;
+
+  const missionDetail = m && !state.vpShowPicker ? `
   <div class="card">
     <div class="m-head" style="margin-bottom:8px">
       <div class="m-name">${esc(m.name)}</div>
@@ -878,19 +900,14 @@ function renderVP(){
     <div style="font-size:14px;color:var(--text);line-height:1.55;margin-bottom:10px">${esc(m.primary)}</div>`:''}
     ${m.secondaries&&m.secondaries.length?`<div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Secondaries</div>
     <ul class="obj-list">${m.secondaries.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
-    <div style="margin-top:12px">
+    <div style="margin-top:12px;display:flex;gap:8px">
       <button class="btn btn-g" data-action="expand-map" style="font-size:11px;padding:6px 14px">⛶ View Map</button>
+      <button class="btn btn-g" data-action="vp-change-mission" style="font-size:11px;padding:6px 14px">⟳ Change</button>
     </div>
-  </div>` : `
-  <div class="card">
-    <div class="empty" style="padding:22px 20px">
-      <div class="empty-icon">⚄</div>
-      <p>No mission selected — go to <strong style="color:var(--goldb)">Randomize</strong> to roll one.</p>
-    </div>
-  </div>`;
+  </div>` : '';
 
   return `
-  ${missionCard}
+  ${state.vpShowPicker || !m ? missionPicker : missionDetail}
   <div class="card">
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
       <span>⚔ Victory Points</span>
@@ -1002,6 +1019,13 @@ document.getElementById('main').addEventListener('click',e=>{
   if(action==='vp-reset'){
     state.vp=VP_DEFAULT(); save(); render();
   }
+  if(action==='vp-roll-mission'){
+    const all=[...MISSIONS,...state.customMissions];
+    state.result=all[Math.floor(Math.random()*all.length)];
+    state.vpShowPicker=false; render();
+  }
+  if(action==='vp-change-mission'){ state.vpShowPicker=true; render(); }
+  if(action==='vp-cancel-picker'){ state.vpShowPicker=false; render(); }
 });
 
 document.getElementById('main').addEventListener('keydown',e=>{
@@ -1011,6 +1035,11 @@ document.getElementById('main').addEventListener('keydown',e=>{
 // After vault tab renders, set default size to match initial type selection
 document.getElementById('main').addEventListener('change',e=>{
   if(e.target.id==='t-type') updateDefaultSize(e.target.value);
+  if(e.target.id==='vp-mission-select'){
+    const all=[...MISSIONS,...state.customMissions];
+    const found=all.find(ms=>String(ms.id)===e.target.value);
+    if(found){ state.result=found; state.vpShowPicker=false; render(); }
+  }
 });
 
 document.getElementById('main').addEventListener('input',e=>{
