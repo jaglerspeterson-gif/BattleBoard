@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Battle Board — Warhammer 40K</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0b09;--bg-card:#161210;--bg-el:#1e1916;
+  --border:#332b1f;--brgold:#6a4e22;--gold:#c9922a;--goldb:#e8b84b;
+  --red:#7a1515;--redb:#b03030;--text:#cfc3a8;--textd:#6e6050;--textb:#ede0c4;
+  --green:#2a5432;--greenb:#4a9458;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Georgia,"Times New Roman",serif;font-size:16px;line-height:1.5;min-height:100vh}
+.hdr{background:linear-gradient(180deg,#1a0808,var(--bg));border-bottom:2px solid var(--brgold);padding:16px 28px 12px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.hdr-skull{font-size:30px;line-height:1}
+.hdr-t1{font-size:20px;font-weight:700;color:var(--goldb);letter-spacing:3px;font-variant:small-caps}
+.hdr-t2{font-size:11px;color:var(--textd);letter-spacing:3px;text-transform:uppercase;margin-top:1px}
+.tabs{display:flex;background:var(--bg-card);border-bottom:1px solid var(--border);padding:0 28px}
+.tab{background:none;border:none;border-bottom:3px solid transparent;color:var(--textd);cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;letter-spacing:2px;padding:13px 22px 10px;text-transform:uppercase;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--text)}
+.tab.on{border-bottom-color:var(--gold);color:var(--goldb)}
+.main{padding:28px;max-width:1080px;margin:0 auto}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:22px;margin-bottom:18px}
+.card-title{font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--goldb);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.frow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px}
+.field label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--textd)}
+input,select,textarea{background:var(--bg-el);border:1px solid var(--border);border-radius:3px;color:var(--textb);font-family:inherit;font-size:15px;padding:8px 11px;outline:none;transition:border-color .15s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+select option{background:var(--bg-el)}
+textarea{resize:vertical;min-height:72px}
+.btn{border:none;border-radius:3px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;letter-spacing:1.5px;padding:9px 18px;text-transform:uppercase;transition:all .15s;white-space:nowrap}
+.btn-p{background:linear-gradient(135deg,#6e3200,#c9922a);color:var(--textb);border:1px solid var(--gold)}
+.btn-p:hover{background:linear-gradient(135deg,#8a4000,#e8b84b)}
+.btn-d{background:transparent;color:var(--redb);border:1px solid var(--red)}
+.btn-d:hover{background:var(--red);color:#fff}
+.btn-g{background:transparent;color:var(--textd);border:1px solid var(--border)}
+.btn-g:hover{border-color:var(--gold);color:var(--goldb)}
+.btn-big{font-size:15px;padding:15px 38px;letter-spacing:2px;box-shadow:0 0 28px rgba(201,146,42,.25)}
+.btn-big:hover{box-shadow:0 0 44px rgba(201,146,42,.45);transform:translateY(-1px)}
+.t-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.t-item{background:var(--bg-el);border:1px solid var(--border);border-radius:4px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.t-icon{font-size:26px;width:36px;text-align:center;flex-shrink:0}
+.t-info{flex:1;min-width:0}
+.t-name{font-weight:600;color:var(--textb);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-meta{font-size:13px;color:var(--textd);margin-top:2px}
+.t-qty{background:var(--brgold);color:var(--goldb);border-radius:10px;font-size:12px;font-weight:700;padding:2px 9px;flex-shrink:0}
+.m-list{display:flex;flex-direction:column;gap:10px}
+.m-item{background:var(--bg-el);border:1px solid var(--border);border-radius:4px;padding:14px 18px}
+.m-item.official{border-left:3px solid var(--gold)}
+.m-item.custom{border-left:3px solid var(--greenb)}
+.m-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.m-name{font-weight:600;color:var(--textb);font-size:16px;flex:1}
+.badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:2px}
+.b-off{background:rgba(201,146,42,.15);color:var(--goldb);border:1px solid var(--brgold)}
+.b-cus{background:rgba(42,84,50,.25);color:var(--greenb);border:1px solid var(--green)}
+.m-deploy{font-size:12px;color:var(--textd);letter-spacing:1px;margin-bottom:5px}
+.m-desc{font-size:14px;color:var(--text);line-height:1.55}
+.roll-center{text-align:center;padding:36px 20px}
+.roll-center p{color:var(--textd);font-style:italic;margin-bottom:22px}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:680px){.result-grid{grid-template-columns:1fr}}
+.res-title{font-size:24px;font-weight:700;color:var(--goldb);letter-spacing:2px;margin-bottom:4px;font-variant:small-caps}
+.res-src{font-size:11px;color:var(--textd);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+.sec-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-top:14px;margin-bottom:6px}
+.res-text{font-size:15px;color:var(--text);line-height:1.65}
+.obj-list{list-style:none;display:flex;flex-direction:column;gap:5px}
+.obj-list li{padding-left:16px;position:relative;font-size:14px;line-height:1.55}
+.obj-list li::before{content:'▸';color:var(--gold);position:absolute;left:0}
+.map-wrap{background:var(--bg-el);border:1px solid var(--border);border-radius:4px;padding:14px}
+.map-lbl{font-size:11px;color:var(--textd);text-align:center;margin-top:8px;display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+.slot{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)}
+.slot:last-child{border-bottom:none}
+.slot-pos{background:var(--red);color:#eee;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;border-radius:2px;white-space:nowrap;min-width:84px;text-align:center;margin-top:2px;flex-shrink:0}
+.slot-body{flex:1}
+.slot-piece{font-weight:600;color:var(--textb);font-size:15px}
+.slot-detail{font-size:13px;color:var(--textd);margin-top:3px;line-height:1.5}
+.warn{background:rgba(122,21,21,.15);border:1px solid var(--red);border-radius:4px;padding:12px;color:#d07070;font-size:14px;margin-bottom:14px}
+.extra-box{background:rgba(201,146,42,.07);border:1px solid var(--brgold);border-radius:4px;padding:12px;margin-top:14px;font-size:14px;color:var(--text)}
+.empty{text-align:center;padding:44px 20px;color:var(--textd)}
+.empty-icon{font-size:44px;margin-bottom:10px}
+.empty p{font-style:italic}
+.reroll{display:flex;justify-content:center;gap:10px;margin-top:22px}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin .5s linear infinite}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-skull">☠</div>
+  <div>
+    <div class="hdr-t1">Battle Board</div>
+    <div class="hdr-t2">Warhammer 40,000 · Terrain &amp; Mission Randomizer</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-tab="randomizer">⚄ Randomize</button>
+  <button class="tab" data-tab="vault">🏚 Terrain Vault</button>
+  <button class="tab" data-tab="missions">📜 Missions</button>
+</div>
+
+<div class="main" id="main"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   TERRAIN TYPE METADATA
+═══════════════════════════════════════════════════ */
+const TERRAIN_TYPES = [
+  {id:'ruins',         label:'Ruins',            icon:'🏚'},
+  {id:'area',          label:'Area Terrain',     icon:'🌲'},
+  {id:'obstacle',      label:'Obstacles',        icon:'🧱'},
+  {id:'industrial',    label:'Industrial',       icon:'⚙️'},
+  {id:'fortification', label:'Fortification',    icon:'🏰'},
+  {id:'crater',        label:'Craters',          icon:'💥'},
+  {id:'scatter',       label:'Scatter / Crates', icon:'📦'},
+  {id:'other',         label:'Other',            icon:'🗿'},
+];
+const T = Object.fromEntries(TERRAIN_TYPES.map(t=>[t.id,t]));
+
+/* visual config per type — size in SVG px, shape, colors */
+const T_VIS = {
+  ruins:         {w:54, h:38, shape:'ruin',    fill:'#8a8480', stroke:'#5a5450', accent:'#4a7ab5'},
+  area:          {w:48, h:32, shape:'ellipse', fill:'#4a6840', stroke:'#2a4820', accent:null},
+  obstacle:      {w:60, h:12, shape:'rect',    fill:'#7a6848', stroke:'#4a3828', accent:null},
+  industrial:    {w:42, h:42, shape:'ind',     fill:'#586878', stroke:'#384858', accent:'#7a9ab8'},
+  fortification: {w:46, h:46, shape:'fort',   fill:'#6a5848', stroke:'#3a2818', accent:'#8a6848'},
+  crater:        {w:36, h:36, shape:'crater',  fill:'#5a4838', stroke:'#3a2818', accent:null},
+  scatter:       {w:22, h:22, shape:'rect',    fill:'#8a7050', stroke:'#5a4830', accent:null},
+  other:         {w:40, h:30, shape:'rect',    fill:'#686868', stroke:'#484848', accent:null},
+};
+
+/* Size categories → multiplier applied to T_VIS base dimensions */
+const SIZE_MULT = {tiny:0.45, small:0.7, medium:1.0, large:1.5, huge:2.2};
+const SIZE_LABELS = {tiny:'Tiny (~2")', small:'Small (~3")', medium:'Medium (~5")', large:'Large (~8")', huge:'Huge (~12"+)'};
+/* Default size per terrain type */
+const DEFAULT_SIZE = {ruins:'large',area:'medium',obstacle:'small',industrial:'medium',fortification:'large',crater:'small',scatter:'tiny',other:'medium'};
+
+/* slot-name → [xFrac, yFrac] on the 0-1 board */
+const POS_MAP = {
+  'nw quarter':    [0.17, 0.27],
+  'ne quarter':    [0.83, 0.27],
+  'sw quarter':    [0.17, 0.73],
+  'se quarter':    [0.83, 0.73],
+  'center':        [0.50, 0.50],
+  'center (heavy)':[0.50, 0.50],
+  'left flank':    [0.07, 0.50],
+  'right flank':   [0.93, 0.50],
+  'mid-left':      [0.33, 0.40],
+  'mid-right':     [0.67, 0.40],
+  'mid-board l':   [0.33, 0.52],
+  'mid-board r':   [0.67, 0.52],
+  'mid-board':     [0.50, 0.58],
+  'mid-flanks':    [0.50, 0.20],
+  'mid-edges':     [0.50, 0.12],
+  'nw corner':     [0.09, 0.15],
+  'se corner':     [0.91, 0.85],
+  'ne open':       [0.83, 0.20],
+  'sw open':       [0.17, 0.80],
+  'all quarters':  [0.32, 0.38],
+  'open zones':    [0.65, 0.32],
+  'open areas':    [0.28, 0.62],
+  'open ground':   [0.72, 0.68],
+  'left lane':     [0.22, 0.50],
+  'right lane':    [0.78, 0.50],
+  'deploy zones':  [0.50, 0.10],
+  'flanks':        [0.10, 0.68],
+  'edges':         [0.50, 0.88],
+  'board setup':   [0.50, 0.50],
+  'custom layout': [0.50, 0.50],
+};
+
+const DEPLOYMENTS = {
+  'dawn-of-war'   :'Dawn of War',
+  'hammer-anvil'  :'Hammer and Anvil',
+  'search-destroy':'Search and Destroy',
+  'sweeping'      :'Sweeping Engagement',
+};
+
+/* ═══════════════════════════════════════════════════
+   MISSIONS
+═══════════════════════════════════════════════════ */
+const MISSIONS = [
+  {
+    id:'priority-targets', name:'Priority Targets', source:'official', deployment:'dawn-of-war',
+    description:'Both sides contest a spread of objectives across the battlefield. Holding more at end of each Command phase wins the war of attrition.',
+    primary:'Score 4 VP at end of each Command phase for each objective you control. Score 5 VP if you control more than your opponent.',
+    secondaries:['Bring It Down – VP for destroying enemy Vehicles and Monsters.','Assassination – VP for destroying enemy Characters.','Engage on All Fronts – VP for units in 3+ table quarters.'],
+    cadence:['T1: Establish presence on your deployment objectives.','T2: Push for the central objective.','T3–T5: Fight for control; use Command Re-rolls wisely.'],
+    slots:[
+      {pos:'NW Quarter',  pref:'ruins',    rot:15,  detail:'Place a large Ruin roughly 9" from each table edge in the NW.'},
+      {pos:'NE Quarter',  pref:'ruins',    rot:-10, detail:'Mirror the NW placement for balanced play.'},
+      {pos:'SW Quarter',  pref:'ruins',    rot:20,  detail:'Place a large Ruin in the SW quarter.'},
+      {pos:'SE Quarter',  pref:'ruins',    rot:-15, detail:'Mirror the SW placement.'},
+      {pos:'Center',      pref:'area',     rot:0,   detail:'1–2 Area Terrain or Industrial pieces in the midfield.'},
+      {pos:'Flanks',      pref:'obstacle', rot:0,   detail:'Scatter 2–4 Obstacles along the long edges for flank cover.'},
+    ],
+    objectives:[{x:.5,y:.5},{x:.25,y:.25},{x:.75,y:.25},{x:.25,y:.75},{x:.75,y:.75}],
+  },
+  {
+    id:'burden-of-trust', name:'Burden of Trust', source:'official', deployment:'search-destroy',
+    description:'Armies deploy in opposite corners and must push deep into enemy territory. Aggression is rewarded.',
+    primary:'Score 3 VP per Command phase per objective you control. Bonus 4 VP for controlling any objective in your opponent\'s deployment zone.',
+    secondaries:['No Prisoners – VP for fully destroying enemy Infantry.','Stranglehold – VP each round you control more objectives.','Behind Enemy Lines – VP for units in opponent\'s deployment at game end.'],
+    cadence:['T1: Secure your deployment objectives; advance scouts.','T2: Contest midfield with your fastest units.','T3–T5: Push into enemy deployment while holding your own.'],
+    slots:[
+      {pos:'Center',     pref:'industrial',rot:0,  detail:'2–3 Industrial or large Ruins in the center for a contested midfield.'},
+      {pos:'NW Corner',  pref:'ruins',    rot:10, detail:'Ruins near the NW corner give cover for arriving units.'},
+      {pos:'SE Corner',  pref:'ruins',    rot:-8, detail:'Mirror ruins in the SE corner.'},
+      {pos:'Mid-Flanks', pref:'area',     rot:0,  detail:'Area Terrain on flanks for lateral cover.'},
+      {pos:'Open Zones', pref:'obstacle', rot:30, detail:'Scatter Obstacles through the NE and SW open quarters.'},
+    ],
+    objectives:[{x:.5,y:.5},{x:.17,y:.17},{x:.83,y:.83},{x:.5,y:.22},{x:.5,y:.78}],
+  },
+  {
+    id:'take-and-hold', name:'Take and Hold', source:'official', deployment:'hammer-anvil',
+    description:'A grinding battle across the long axis. Holding the central objective is crucial; flanking objectives provide additional scoring.',
+    primary:'The central objective is worth 5 VP per Command phase. Each flanking objective is worth 2 VP. Holding all three is worth 12 VP.',
+    secondaries:['Overwhelming Force – VP for controlling objectives with multiple units.','Grind Them Down – VP for cumulative destroyed units.','Cull the Horde – VP for destroying units of 5+ models.'],
+    cadence:['T1: Rush the center with your hardiest units.','T2–T3: Hold the center while flanking forces grab side objectives.','T4–T5: Hold what you have — deny the center at all costs.'],
+    slots:[
+      {pos:'Center',      pref:'ruins',    rot:0,   detail:'Pack 2–3 large Ruins around the central objective.'},
+      {pos:'Left Flank',  pref:'area',     rot:0,   detail:'Area Terrain on the left flank.'},
+      {pos:'Right Flank', pref:'area',     rot:0,   detail:'Mirror Area Terrain on the right flank.'},
+      {pos:'Mid-Left',    pref:'industrial',rot:0,  detail:'Industrial terrain mid-table left.'},
+      {pos:'Mid-Right',   pref:'industrial',rot:0,  detail:'Mirror Industrial terrain mid-table right.'},
+      {pos:'Edges',       pref:'obstacle', rot:90,  detail:'Scatter Obstacles along the long table edges.'},
+    ],
+    objectives:[{x:.5,y:.5},{x:.25,y:.5},{x:.75,y:.5}],
+  },
+  {
+    id:'scorched-earth', name:'Scorched Earth', source:'official', deployment:'sweeping',
+    description:'Objectives can be burned rather than held — destroying one denies it permanently. A volatile, high-stakes mission.',
+    primary:'Score 4 VP per Command phase for each objective you control. Spend an action to destroy an objective. Score 3 VP per destroyed objective.',
+    secondaries:['Raise Banners – Plant banners for end-game bonus VP.','Wrath of the Faithful – VP for destroying the opponent\'s most expensive unit.','Defend Strongholds – VP for controlling your original objectives at game end.'],
+    cadence:['T1: Claim nearest objectives; decide which to burn vs. hold.','T2–T3: Burn contested objectives the opponent looks likely to capture.','T4–T5: Secure remaining objectives and rack up banner VP.'],
+    slots:[
+      {pos:'All Quarters',pref:'scatter',  rot:0,  detail:'Spread Scatter terrain widely — open sightlines reward aggression.'},
+      {pos:'Center',      pref:'obstacle', rot:0,  detail:'Obstacle cluster in the center creates a key chokepoint.'},
+      {pos:'NW Quarter',  pref:'area',     rot:0,  detail:'Area Terrain NW gives cover for holding/burning that objective.'},
+      {pos:'SE Quarter',  pref:'area',     rot:0,  detail:'Mirror Area Terrain in SE.'},
+      {pos:'Open Areas',  pref:'crater',   rot:0,  detail:'Craters in open areas for thematic scatter and light cover.'},
+    ],
+    objectives:[{x:.25,y:.25},{x:.75,y:.25},{x:.25,y:.75},{x:.75,y:.75},{x:.5,y:.5}],
+  },
+  {
+    id:'linchpin', name:'Linchpin', source:'official', deployment:'dawn-of-war',
+    description:'A single central objective — the Linchpin — is worth massive VP. Fighting over this one point creates intense, focused battles.',
+    primary:'Score 8 VP per Command phase if you control the Linchpin. Score 2 VP each for other objectives. The Linchpin cannot be destroyed.',
+    secondaries:['Marked for Death – Designate an enemy unit; VP for destroying it.','Area Denial – VP for no enemy units within 6" of board center.','Encirclement – VP for controlling objectives in multiple quarters simultaneously.'],
+    cadence:['T1: Race to the center — whoever holds the Linchpin first has a huge advantage.','T2–T3: Retain the center while threatening secondaries.','T4–T5: Hold the Linchpin at any cost.'],
+    slots:[
+      {pos:'Center (Heavy)',pref:'ruins',   rot:0,  detail:'Place your largest Ruins around the center — the Linchpin deeply embedded in terrain.'},
+      {pos:'Mid-Board L',   pref:'industrial',rot:0,detail:'Industrial terrain left of center covers the left approach.'},
+      {pos:'Mid-Board R',   pref:'industrial',rot:0,detail:'Mirror on the right approach.'},
+      {pos:'Flanks',        pref:'area',    rot:0,  detail:'Area Terrain on both flanks provides alternate approach routes.'},
+      {pos:'Deploy Zones',  pref:'obstacle',rot:0,  detail:'Scatter Obstacles in deployment zones to protect gathering forces.'},
+    ],
+    objectives:[{x:.5,y:.5},{x:.2,y:.5},{x:.8,y:.5}],
+  },
+  {
+    id:'raise-banners', name:'Raise the Banners High', source:'official', deployment:'search-destroy',
+    description:'Plant banners on objectives to claim them permanently. The army with the most banners at game end wins a significant bonus.',
+    primary:'Score 3 VP per Command phase for each objective you control. Score 5 VP at game end for each objective with your banner planted (max 3).',
+    secondaries:['Plant Standards – VP mid-game for each banner planted.','Death of a Hero – VP for destroying the enemy Warlord.','Secure No Man\'s Land – VP for controlling the objective nearest the board center.'],
+    cadence:['T1: Move Infantry banner carriers to your objectives.','T2: Spend actions planting banners — each takes a full action.','T3–T5: Protect banner objectives; push to plant banners in the center.'],
+    slots:[
+      {pos:'NW Corner',  pref:'ruins',   rot:5,   detail:'Corner Ruins protect the NW deployment zone.'},
+      {pos:'SE Corner',  pref:'ruins',   rot:-5,  detail:'Mirror Ruins for SE corner.'},
+      {pos:'Center',     pref:'area',    rot:0,   detail:'Area Terrain in the center gives Infantry cover while planting banners.'},
+      {pos:'NE Open',    pref:'obstacle',rot:20,  detail:'Obstacles in NE break long sightlines.'},
+      {pos:'SW Open',    pref:'obstacle',rot:-20, detail:'Mirror Obstacles in SW.'},
+      {pos:'Mid-Flanks', pref:'scatter', rot:0,   detail:'Scatter terrain on the flanks slows fast flanking units.'},
+    ],
+    objectives:[{x:.17,y:.17},{x:.83,y:.83},{x:.5,y:.5},{x:.5,y:.2},{x:.5,y:.8}],
+  },
+  {
+    id:'purge-the-foe', name:'Purge the Foe', source:'official', deployment:'hammer-anvil',
+    description:'Annihilation is the primary goal. Objectives still score but the real prize is destroying the enemy army.',
+    primary:'Score 2 VP per Command phase per objective you control. Score 1 VP per enemy unit destroyed this round (max 5 VP per round from kills).',
+    secondaries:['Thin Their Ranks – VP for destroying a cumulative number of enemy models.','Bring It Down – VP for destroying Vehicles and Monsters.','Oath of Moment – Declare a unit; VP each time it destroys an enemy unit.'],
+    cadence:['T1: Advance and unleash as much firepower as possible.','T2–T3: Trade objectives for kill VP.','T4–T5: Finish enemies; hold objectives for insurance VP.'],
+    slots:[
+      {pos:'Center',     pref:'obstacle',  rot:45, detail:'Obstacles create chokepoints funnelling enemies into kill zones.'},
+      {pos:'Left Lane',  pref:'ruins',     rot:0,  detail:'Ruins on the left create a hard-cover advance lane.'},
+      {pos:'Right Lane', pref:'ruins',     rot:0,  detail:'Mirror Ruins on the right.'},
+      {pos:'Mid-Board',  pref:'industrial',rot:0,  detail:'Industrial terrain mid-board for late-game hard cover.'},
+      {pos:'Open Ground',pref:'crater',    rot:0,  detail:'Craters in open areas for light Infantry cover.'},
+    ],
+    objectives:[{x:.5,y:.5},{x:.2,y:.5},{x:.8,y:.5},{x:.35,y:.3},{x:.65,y:.7}],
+  },
+  {
+    id:'crucible', name:'Crucible of Battle', source:'official', deployment:'sweeping',
+    description:'A balanced mission demanding control across all corners. Consistent scoring every round matters more than single explosive turns.',
+    primary:'Score 2 VP per Command phase per objective you control (5 total). Bonus 3 VP if you control 3 or more objectives.',
+    secondaries:['Engage on All Fronts – VP for units in 3+ table quarters.','Stranglehold – VP for controlling more objectives each round.','Psychological Warfare – VP for more Characters than the opponent in No Man\'s Land.'],
+    cadence:['T1: Spread out to contest all 4 table quarters.','T2–T3: Maintain board presence; don\'t overcommit.','T4–T5: Consolidate control of objectives you can hold.'],
+    slots:[
+      {pos:'NW Quarter',pref:'ruins',    rot:12,  detail:'Large Ruins NW provide the signature cover piece for that zone.'},
+      {pos:'NE Quarter',pref:'area',     rot:0,   detail:'Area Terrain NE for varied terrain feel.'},
+      {pos:'SW Quarter',pref:'area',     rot:0,   detail:'Area Terrain SW for flanking forces.'},
+      {pos:'SE Quarter',pref:'ruins',    rot:-12, detail:'Ruins SE mirror NW — diagonal symmetry.'},
+      {pos:'Center',    pref:'industrial',rot:0,  detail:'Industrial terrain creates a tight contested center.'},
+      {pos:'Mid-Edges', pref:'obstacle', rot:90,  detail:'Obstacles at mid-edge points slow lateral movement.'},
+    ],
+    objectives:[{x:.5,y:.5},{x:.25,y:.25},{x:.75,y:.25},{x:.25,y:.75},{x:.75,y:.75}],
+  },
+];
+
+/* ═══════════════════════════════════════════════════
+   PLATFORM LAYER
+   All platform-specific APIs live here. When adding
+   Capacitor for iOS/Android, only swap out the bodies
+   of Storage.get and Storage.set — nothing else in the
+   app touches the platform directly.
+
+   Web (current):
+     Uses localStorage.
+
+   iOS / Android via Capacitor (future):
+     1. npm install @capacitor/core @capacitor/cli @capacitor/preferences
+     2. Replace Storage.get with:
+          const { value } = await Preferences.get({ key });
+          return value ? JSON.parse(value) : fallback;
+     3. Replace Storage.set with:
+          await Preferences.set({ key, value: JSON.stringify(value) });
+     4. npx cap add ios && npx cap add android
+     5. npx cap sync  (after every build)
+
+   React Native (alternative, heavier lift):
+     Replace Storage.get/set with AsyncStorage from
+     @react-native-async-storage/async-storage.
+     UI layer (renderVault etc.) would need rewriting
+     in React Native components — business logic reuses cleanly.
+═══════════════════════════════════════════════════ */
+const Storage = {
+  get(key, fallback=null) {
+    // MOBILE: await Preferences.get({ key }) then JSON.parse
+    try { const v=localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch { return fallback; }
+  },
+  set(key, value) {
+    // MOBILE: await Preferences.set({ key, value: JSON.stringify(value) })
+    try { localStorage.setItem(key, JSON.stringify(value)); }
+    catch(e) { console.warn('Storage.set failed:', e); }
+  },
+  remove(key) {
+    // MOBILE: await Preferences.remove({ key })
+    try { localStorage.removeItem(key); } catch {}
+  }
+};
+
+/* ═══════════════════════════════════════════════════
+   DATA SERVICE
+   All reads and writes go through here. Keeps the rest
+   of the app ignorant of where data lives — easy to
+   layer in a backend / user accounts later.
+═══════════════════════════════════════════════════ */
+const STORAGE_KEYS = { TERRAIN:'wh40k_terrain', MISSIONS:'wh40k_missions' };
+
+const DataService = {
+  loadTerrain()      { return Storage.get(STORAGE_KEYS.TERRAIN, []); },
+  saveTerrain(data)  { Storage.set(STORAGE_KEYS.TERRAIN, data); },
+  loadMissions()     { return Storage.get(STORAGE_KEYS.MISSIONS, []); },
+  saveMissions(data) { Storage.set(STORAGE_KEYS.MISSIONS, data); },
+  // Future: loadUser(), saveUser(), syncToCloud(), etc.
+};
+
+/* ═══════════════════════════════════════════════════
+   APP STATE
+═══════════════════════════════════════════════════ */
+let state = {tab:'randomizer', terrain:[], customMissions:[], result:null, rolling:false, showMissionForm:false};
+
+function load() {
+  state.terrain = DataService.loadTerrain();
+  state.customMissions = DataService.loadMissions();
+}
+function save() {
+  DataService.saveTerrain(state.terrain);
+  DataService.saveMissions(state.customMissions);
+}
+
+/* ═══════════════════════════════════════════════════
+   COMPUTE TERRAIN ASSIGNMENTS
+═══════════════════════════════════════════════════ */
+function computeAssignments(mission) {
+  const expanded = [];
+  state.terrain.forEach(p => { for(let i=0;i<p.qty;i++) expanded.push(p); });
+  const pool = [...expanded];
+  return mission.slots.map(slot => {
+    const idx = pool.findIndex(t => t.type === slot.pref);
+    if(idx !== -1){ const p = pool.splice(idx,1)[0]; return {slot, piece:p, matched:true}; }
+    if(pool.length){ const p = pool.splice(0,1)[0]; return {slot, piece:p, matched:false}; }
+    return {slot, piece:null, matched:false};
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   TERRAIN SHAPE SVG GENERATOR
+═══════════════════════════════════════════════════ */
+function terrainSVGShape(type, cx, cy, w, h, rot, label) {
+  const v = T_VIS[type] || T_VIS.other;
+  const hw = w/2, hh = h/2;
+  const tf = `translate(${cx},${cy}) rotate(${rot})`;
+  const lbl = label.length > 10 ? label.slice(0,9)+'…' : label;
+
+  let body = '';
+  switch(v.shape) {
+    case 'ruin': {
+      // Main footprint
+      body += `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" fill="${v.fill}" stroke="${v.stroke}" stroke-width="1.5" rx="1"/>`;
+      // Blue wall accent along one edge (like GW terrain walls)
+      body += `<rect x="${-hw}" y="${-hh}" width="7" height="${h}" fill="${v.accent}" stroke="${v.stroke}" stroke-width="0.5" rx="1"/>`;
+      // Interior wall lines suggesting rooms
+      body += `<line x1="${-hw+10}" y1="${-hh}" x2="${-hw+10}" y2="${hh}" stroke="${v.stroke}" stroke-width="1" stroke-dasharray="3,2" opacity="0.6"/>`;
+      body += `<line x1="${-hw}" y1="0" x2="${hw}" y2="0" stroke="${v.stroke}" stroke-width="1" stroke-dasharray="3,2" opacity="0.4"/>`;
+      break;
+    }
+    case 'ellipse': {
+      body += `<ellipse cx="0" cy="0" rx="${hw}" ry="${hh}" fill="${v.fill}" stroke="${v.stroke}" stroke-width="1.5"/>`;
+      // texture dots
+      body += `<ellipse cx="${-hw*0.3}" cy="${-hh*0.2}" rx="${hw*0.25}" ry="${hh*0.25}" fill="${v.stroke}" opacity="0.3"/>`;
+      body += `<ellipse cx="${hw*0.3}" cy="${hh*0.2}" rx="${hw*0.2}" ry="${hh*0.2}" fill="${v.stroke}" opacity="0.25"/>`;
+      break;
+    }
+    case 'ind': {
+      body += `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" fill="${v.fill}" stroke="${v.stroke}" stroke-width="1.5" rx="1"/>`;
+      body += `<rect x="${-hw}" y="${-hh}" width="${w}" height="6" fill="${v.accent}" stroke="${v.stroke}" stroke-width="0.5"/>`;
+      body += `<line x1="${-hw}" y1="${-hh+12}" x2="${hw}" y2="${-hh+12}" stroke="${v.accent}" stroke-width="1" opacity="0.5"/>`;
+      body += `<line x1="${-hw}" y1="${hh-8}" x2="${hw}" y2="${hh-8}" stroke="${v.accent}" stroke-width="1" opacity="0.5"/>`;
+      // pipe circles
+      body += `<circle cx="${-hw+8}" cy="${hh-4}" r="3" fill="${v.stroke}" stroke="${v.accent}" stroke-width="0.5"/>`;
+      body += `<circle cx="${hw-8}" cy="${hh-4}" r="3" fill="${v.stroke}" stroke="${v.accent}" stroke-width="0.5"/>`;
+      break;
+    }
+    case 'crater': {
+      body += `<circle cx="0" cy="0" r="${hw}" fill="${v.fill}" stroke="${v.stroke}" stroke-width="1.5"/>`;
+      body += `<circle cx="0" cy="0" r="${hw*0.55}" fill="#3a2818" stroke="${v.stroke}" stroke-width="0.5"/>`;
+      body += `<circle cx="0" cy="0" r="${hw*0.25}" fill="#2a1808" stroke="none"/>`;
+      break;
+    }
+    case 'fort': {
+      body += `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" fill="${v.fill}" stroke="${v.stroke}" stroke-width="2" rx="2"/>`;
+      // Battlements (crenellations) on top
+      for(let i=0;i<4;i++){
+        const bx = -hw + 4 + i*(w-8)/4;
+        body += `<rect x="${bx}" y="${-hh-4}" width="${(w-8)/5}" height="5" fill="${v.accent}" stroke="${v.stroke}" stroke-width="0.5"/>`;
+      }
+      body += `<rect x="${-hw+6}" y="${-hh+6}" width="${w-12}" height="${h-12}" fill="none" stroke="${v.stroke}" stroke-width="0.8" opacity="0.5"/>`;
+      break;
+    }
+    default: { // rect, scatter, obstacle
+      body += `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" fill="${v.fill}" stroke="${v.stroke}" stroke-width="1.5" rx="2"/>`;
+      if(type==='obstacle'){
+        // Bolts
+        body += `<circle cx="${-hw+4}" cy="0" r="1.5" fill="${v.stroke}" opacity="0.7"/>`;
+        body += `<circle cx="${hw-4}" cy="0" r="1.5" fill="${v.stroke}" opacity="0.7"/>`;
+      }
+      break;
+    }
+  }
+
+  // Label below the shape
+  const labelY = hh + 10;
+  const labelBg = `<rect x="${-lbl.length*2.6}" y="${labelY-7}" width="${lbl.length*5.2}" height="9" fill="rgba(0,0,0,0.55)" rx="2"/>`;
+  const labelTxt = `<text y="${labelY}" text-anchor="middle" fill="#e8c878" font-size="6.5" font-family="Georgia,serif" font-weight="bold">${esc(lbl)}</text>`;
+
+  return `<g transform="${tf}">${body}${labelBg}${labelTxt}</g>`;
+}
+
+/* ═══════════════════════════════════════════════════
+   DEPLOYMENT MAP SVG  (with terrain markers)
+═══════════════════════════════════════════════════ */
+function deploymentSVG(deployment, objectives, assignments) {
+  const W=420, H=270;
+
+  // ── Board background (light GW-style map) ──
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;border-radius:2px">`;
+  svg += `<defs>
+    <pattern id="bgrid" width="14" height="14" patternUnits="userSpaceOnUse">
+      <path d="M14 0 L0 0 0 14" fill="none" stroke="#b8b0a0" stroke-width="0.4"/>
+    </pattern>
+  </defs>`;
+
+  // Board fill
+  svg += `<rect width="${W}" height="${H}" fill="#c8c0b0" rx="2"/>`;
+  svg += `<rect width="${W}" height="${H}" fill="url(#bgrid)" rx="2"/>`;
+
+  // ── Deployment zones ──
+  switch(deployment) {
+    case 'dawn-of-war':
+      svg += `<rect x="0" y="0" width="${W}" height="51" fill="rgba(50,80,180,.18)" stroke="#4466bb" stroke-width="1.5"/>`;
+      svg += `<rect x="0" y="${H-51}" width="${W}" height="51" fill="rgba(180,40,40,.18)" stroke="#bb3333" stroke-width="1.5"/>`;
+      svg += `<text x="${W/2}" y="30" text-anchor="middle" fill="#3355aa" font-size="10" font-family="Georgia" letter-spacing="1" font-weight="bold">PLAYER 1 — 12"</text>`;
+      svg += `<text x="${W/2}" y="${H-18}" text-anchor="middle" fill="#aa2222" font-size="10" font-family="Georgia" letter-spacing="1" font-weight="bold">PLAYER 2 — 12"</text>`;
+      svg += `<line x1="0" y1="${H/2}" x2="${W}" y2="${H/2}" stroke="#888070" stroke-width="1" stroke-dasharray="8,4"/>`;
+      break;
+    case 'hammer-anvil':
+      svg += `<rect x="0" y="0" width="57" height="${H}" fill="rgba(50,80,180,.18)" stroke="#4466bb" stroke-width="1.5"/>`;
+      svg += `<rect x="${W-57}" y="0" width="57" height="${H}" fill="rgba(180,40,40,.18)" stroke="#bb3333" stroke-width="1.5"/>`;
+      svg += `<text x="28" y="${H/2}" text-anchor="middle" fill="#3355aa" font-size="9" font-family="Georgia" font-weight="bold" transform="rotate(-90,28,${H/2})">PLAYER 1 — 9"</text>`;
+      svg += `<text x="${W-28}" y="${H/2}" text-anchor="middle" fill="#aa2222" font-size="9" font-family="Georgia" font-weight="bold" transform="rotate(90,${W-28},${H/2})">PLAYER 2 — 9"</text>`;
+      svg += `<line x1="${W/2}" y1="0" x2="${W/2}" y2="${H}" stroke="#888070" stroke-width="1" stroke-dasharray="8,4"/>`;
+      break;
+    case 'search-destroy':
+      svg += `<polygon points="0,0 ${W*.43},0 0,${H*.65}" fill="rgba(50,80,180,.18)" stroke="#4466bb" stroke-width="1.5"/>`;
+      svg += `<polygon points="${W},${H} ${W*.57},${H} ${W},${H*.35}" fill="rgba(180,40,40,.18)" stroke="#bb3333" stroke-width="1.5"/>`;
+      svg += `<text x="38" y="30" fill="#3355aa" font-size="10" font-family="Georgia" font-weight="bold">P1</text>`;
+      svg += `<text x="${W-52}" y="${H-16}" fill="#aa2222" font-size="10" font-family="Georgia" font-weight="bold">P2</text>`;
+      break;
+    case 'sweeping':
+      svg += `<polygon points="0,0 ${W*.45},0 0,${H}" fill="rgba(50,80,180,.18)" stroke="#4466bb" stroke-width="1.5"/>`;
+      svg += `<polygon points="${W},0 ${W*.55},${H} ${W},${H}" fill="rgba(180,40,40,.18)" stroke="#bb3333" stroke-width="1.5"/>`;
+      svg += `<text x="26" y="22" fill="#3355aa" font-size="10" font-family="Georgia" font-weight="bold">P1</text>`;
+      svg += `<text x="${W-40}" y="${H-10}" fill="#aa2222" font-size="10" font-family="Georgia" font-weight="bold">P2</text>`;
+      break;
+  }
+
+  // ── Center crosshair ──
+  svg += `<line x1="${W/2-8}" y1="${H/2}" x2="${W/2+8}" y2="${H/2}" stroke="#888" stroke-width="1"/>`;
+  svg += `<line x1="${W/2}" y1="${H/2-8}" x2="${W/2}" y2="${H/2+8}" stroke="#888" stroke-width="1"/>`;
+
+  // ── Terrain pieces (non-overlapping placement) ──
+  if(assignments && assignments.length) {
+    const placed = []; // [{cx,cy,w,h}]
+    const GAP  = 5;   // minimum clear gap between pieces (px)
+    const BPAD = 5;   // minimum distance from board edge (px)
+    const LBL  = 14;  // label height below each shape (px)
+    const STEP = 20;  // grid step for candidate search (px)
+
+    // Symmetric AABB: each piece occupies [cx±w/2] × [cy-h/2 .. cy+h/2+LBL]
+    function bbOverlap(ax,ay,aw,ah, bx,by,bw,bh) {
+      const aL=ax-aw/2, aR=ax+aw/2, aT=ay-ah/2, aB=ay+ah/2+LBL;
+      const bL=bx-bw/2, bR=bx+bw/2, bT=by-bh/2, bB=by+bh/2+LBL;
+      // No overlap only if one rect is fully outside the other in some axis
+      return !(aR+GAP<=bL || bR+GAP<=aL || aB+GAP<=bT || bB+GAP<=aT);
+    }
+
+    function inBounds(cx,cy,pw,ph) {
+      return cx-pw/2 >= BPAD && cx+pw/2 <= W-BPAD &&
+             cy-ph/2 >= BPAD && cy+ph/2+LBL <= H-BPAD;
+    }
+
+    // Expand outward from target on a fine grid until we find a free cell
+    function findFreePos(tx, ty, pw, ph) {
+      for(let ring=0; ring<=30; ring++) {
+        const cands=[];
+        if(ring===0){ cands.push([0,0]); }
+        else {
+          for(let dx=-ring; dx<=ring; dx++)
+            for(let dy=-ring; dy<=ring; dy++)
+              if(Math.max(Math.abs(dx),Math.abs(dy))===ring)
+                cands.push([dx*STEP, dy*STEP]);
+        }
+        // Try nearest candidates first
+        cands.sort((a,b)=>Math.hypot(a[0],a[1])-Math.hypot(b[0],b[1]));
+        for(const [odx,ody] of cands) {
+          const cx=tx+odx, cy=ty+ody;
+          if(!inBounds(cx,cy,pw,ph)) continue;
+          if(!placed.some(p=>bbOverlap(cx,cy,pw,ph, p.cx,p.cy,p.w,p.h))) return [cx,cy];
+        }
+      }
+      return [tx,ty]; // fallback
+    }
+
+    assignments.forEach(({slot, piece}) => {
+      if(!piece) return;
+      const key = slot.pos.toLowerCase();
+      const [bx,by] = POS_MAP[key] || [0.5,0.5];
+      const v = T_VIS[piece.type] || T_VIS.other;
+      const szKey = piece.size || DEFAULT_SIZE[piece.type] || 'medium';
+      const mult = SIZE_MULT[szKey] || 1;
+      const pw = v.w*mult, ph = v.h*mult;
+      const [cx,cy] = findFreePos(bx*W, by*H, pw, ph);
+      placed.push({cx, cy, w:pw, h:ph});
+      svg += terrainSVGShape(piece.type, cx, cy, pw, ph, slot.rot||0, piece.name);
+    });
+  }
+
+  // ── Objective markers ──
+  objectives.forEach((o, i) => {
+    const cx = o.x*W, cy = o.y*H;
+    svg += `<circle cx="${cx}" cy="${cy}" r="11" fill="rgba(220,220,200,.85)" stroke="#c9922a" stroke-width="2"/>`;
+    svg += `<circle cx="${cx}" cy="${cy}" r="6" fill="none" stroke="#c9922a" stroke-width="1.5"/>`;
+    svg += `<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#8a5a10" font-size="9" font-family="Georgia" font-weight="bold">${i+1}</text>`;
+  });
+
+  svg += `<text x="${W-4}" y="${H-4}" text-anchor="end" fill="#a09888" font-size="8" font-family="Georgia">60" × 44"</text>`;
+  svg += `</svg>`;
+  return svg;
+}
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT GUIDE HTML
+═══════════════════════════════════════════════════ */
+function layoutGuideHTML(mission, assignments) {
+  const expanded = [];
+  state.terrain.forEach(p => { for(let i=0;i<p.qty;i++) expanded.push(p); });
+
+  let warn = expanded.length === 0
+    ? `<div class="warn">⚠ No terrain in your Vault yet. Add terrain pieces in the <strong>Terrain Vault</strong> tab — they'll appear on the map as shapes.</div>` : '';
+
+  const slots = assignments.map(({slot, piece, matched}) => {
+    const tt = piece ? (T[piece.type]||{icon:'🗿',label:piece.type}) : null;
+    const pieceName = piece
+      ? `${tt.icon} ${piece.name}${!matched ? ' <span style="font-size:12px;color:var(--textd)">(best available)</span>' : ''}`
+      : `<span style="color:var(--textd);font-style:italic">Any available terrain</span>`;
+    return `<div class="slot">
+      <div class="slot-pos">${slot.pos}</div>
+      <div class="slot-body">
+        <div class="slot-piece">${pieceName}</div>
+        <div class="slot-detail">${slot.detail}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // leftover pieces
+  const usedIds = assignments.filter(a=>a.piece).map(a=>a.piece);
+  const pool2 = [...expanded];
+  usedIds.forEach(p => { const i=pool2.findIndex(q=>q.id===p.id&&q.name===p.name); if(i!==-1) pool2.splice(i,1); });
+  const extra = pool2.length
+    ? `<div class="extra-box"><strong style="color:var(--goldb)">Remaining terrain:</strong> ${pool2.map(p=>p.name).join(', ')} — distribute freely for additional cover and atmosphere.</div>`
+    : '';
+
+  return warn + slots + extra;
+}
+
+/* ═══════════════════════════════════════════════════
+   RENDERERS
+═══════════════════════════════════════════════════ */
+function terrainTypeOptions(){return TERRAIN_TYPES.map(t=>`<option value="${t.id}">${t.icon} ${t.label}</option>`).join('')}
+// MOBILE-NOTE (Capacitor): fine as-is — runs in WebView.
+// MOBILE-NOTE (React Native): replace with a state update that drives the picker component.
+function updateDefaultSize(type){const el=document.getElementById('t-size');if(el){el.value=DEFAULT_SIZE[type]||'medium';}}
+function deployOptions(){return Object.entries(DEPLOYMENTS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+
+function renderVault(){
+  const items = state.terrain.length===0
+    ? `<div class="empty"><div class="empty-icon">🗺️</div><p>No terrain logged yet. Add your collection above and your pieces will appear as shapes on the battle map.</p></div>`
+    : `<div class="t-grid">${state.terrain.map(t=>{
+        const tt=T[t.type]||{icon:'🗿',label:t.type};
+        return `<div class="t-item">
+          <div class="t-icon">${tt.icon}</div>
+          <div class="t-info"><div class="t-name">${esc(t.name)}</div><div class="t-meta">${tt.label} · ${SIZE_LABELS[t.size||DEFAULT_SIZE[t.type]||'medium']||''}${t.notes?` · ${esc(t.notes)}`:''}</div></div>
+          <div class="t-qty">×${t.qty}</div>
+          <button class="btn btn-d" data-action="del-terrain" data-id="${t.id}" style="padding:3px 9px;font-size:11px">✕</button>
+        </div>`;
+      }).join('')}</div>`;
+  return `
+  <div class="card">
+    <div class="card-title">⚔ Add Terrain Piece</div>
+    <div class="frow">
+      <div class="field" style="flex:2"><label>Name</label><input id="t-name" placeholder="e.g. Gothic Cathedral Ruin" autocomplete="off"/></div>
+      <div class="field"><label>Type</label><select id="t-type" onchange="updateDefaultSize(this.value)">${terrainTypeOptions()}</select></div>
+      <div class="field"><label>Size (footprint)</label><select id="t-size">${Object.entries(SIZE_LABELS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>
+      <div class="field" style="flex:0;min-width:80px"><label>Qty</label><input id="t-qty" type="number" min="1" max="99" value="1"/></div>
+    </div>
+    <div class="frow">
+      <div class="field" style="flex:2"><label>Notes (optional)</label><input id="t-notes" placeholder="e.g. Sector Imperialis, multi-level"/></div>
+      <div class="field" style="flex:0;align-self:flex-end"><button class="btn btn-p" data-action="add-terrain">+ Add</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🏚 Your Terrain Vault (${state.terrain.reduce((a,t)=>a+t.qty,0)} pieces)</div>
+    ${items}
+  </div>`;
+}
+
+function renderMissions(){
+  const all=[...MISSIONS,...state.customMissions];
+  const form=state.showMissionForm?`
+  <div class="card">
+    <div class="card-title">✦ Add Custom Mission</div>
+    <div class="frow">
+      <div class="field" style="flex:2"><label>Mission Name</label><input id="m-name" placeholder="e.g. Last Stand at Cadia"/></div>
+      <div class="field"><label>Deployment</label><select id="m-deploy">${deployOptions()}</select></div>
+    </div>
+    <div class="frow"><div class="field"><label>Description</label><textarea id="m-desc" placeholder="What is this mission about?"></textarea></div></div>
+    <div class="frow"><div class="field"><label>Primary Objective</label><textarea id="m-primary" placeholder="How does the primary score VP?" style="min-height:56px"></textarea></div></div>
+    <div class="frow"><div class="field"><label>Secondaries (one per line)</label><textarea id="m-secondaries" placeholder="Secondary A&#10;Secondary B"></textarea></div></div>
+    <div class="frow"><div class="field"><label>Terrain Layout Notes</label><textarea id="m-terrain" placeholder="e.g. Dense center, open flanks" style="min-height:56px"></textarea></div></div>
+    <div class="frow">
+      <button class="btn btn-p" data-action="save-mission">Save Mission</button>
+      <button class="btn btn-g" data-action="cancel-mission">Cancel</button>
+    </div>
+  </div>`:'';
+  const list=all.map(m=>{
+    const isC=m.source==='custom';
+    return `<div class="m-item ${m.source}">
+      <div class="m-head">
+        <div class="m-name">${esc(m.name)}</div>
+        <span class="badge ${isC?'b-cus':'b-off'}">${isC?'Custom':'Matched Play'}</span>
+        ${isC?`<button class="btn btn-d" data-action="del-mission" data-id="${m.id}" style="padding:2px 8px;font-size:10px">✕</button>`:''}
+      </div>
+      <div class="m-deploy">⚑ ${DEPLOYMENTS[m.deployment]}</div>
+      <div class="m-desc">${esc(m.description)}</div>
+    </div>`;
+  }).join('');
+  return `${form}
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>📜 Mission Library (${all.length})</span>
+      ${!state.showMissionForm?`<button class="btn btn-p" data-action="show-mission-form">+ Custom Mission</button>`:''}
+    </div>
+    <div class="m-list">${list}</div>
+  </div>`;
+}
+
+function renderRandomizer(){
+  if(state.rolling){
+    return `<div class="card roll-center"><div class="spin" style="font-size:48px">⚄</div><p style="margin-top:18px">The dice roll across the Emperor's map table…</p></div>`;
+  }
+  if(!state.result){
+    return `<div class="card roll-center">
+      <p>Assemble your forces. Log your terrain in the Vault.<br>Then roll the dice and let fate decide your battlefield.</p>
+      <button class="btn btn-p btn-big" data-action="roll">⚄ Roll for Mission</button>
+    </div>`;
+  }
+  const m = state.result;
+  const assignments = computeAssignments(m);
+  const secList = m.secondaries.map(s=>`<li>${esc(s)}</li>`).join('');
+  const cadList = (m.cadence||[]).map(s=>`<li>${esc(s)}</li>`).join('');
+
+  // Legend items for terrain types used
+  const usedTypes = [...new Set(assignments.filter(a=>a.piece).map(a=>a.piece.type))];
+  const legendItems = usedTypes.map(type => {
+    const v = T_VIS[type]||T_VIS.other;
+    return `<span style="display:inline-flex;align-items:center;gap:4px">
+      <svg width="12" height="10" style="flex-shrink:0"><rect width="12" height="10" fill="${v.fill}" stroke="${v.stroke}" stroke-width="1" rx="1"/></svg>
+      ${T[type]?T[type].label:type}
+    </span>`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <div class="res-title">${esc(m.name)}</div>
+    <div class="res-src">⚑ ${m.source==='official'?'Matched Play Mission':'Custom Mission'} &nbsp;·&nbsp; ${DEPLOYMENTS[m.deployment]}</div>
+    <div class="res-text" style="font-style:italic;margin-bottom:14px">${esc(m.description)}</div>
+    <div class="result-grid">
+      <div>
+        <div class="sec-label">Primary Objective</div>
+        <div class="res-text">${esc(m.primary)}</div>
+        ${secList?`<div class="sec-label">Secondary Objectives</div><ul class="obj-list">${secList}</ul>`:''}
+        ${cadList?`<div class="sec-label">Battle Cadence</div><ul class="obj-list">${cadList}</ul>`:''}
+      </div>
+      <div>
+        <div class="sec-label">Deployment &amp; Terrain Map</div>
+        <div class="map-wrap">
+          ${deploymentSVG(m.deployment, m.objectives, assignments)}
+          <div class="map-lbl">
+            <span>🔵 P1 &nbsp;🔴 P2</span>
+            <span>⬡ Objectives</span>
+            ${legendItems ? `<span style="color:var(--textd)">|</span> ${legendItems}` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🏚 Terrain Placement Guide</div>
+    ${layoutGuideHTML(m, assignments)}
+  </div>
+  <div class="reroll">
+    <button class="btn btn-p btn-big" data-action="roll">⚄ Re-roll Mission</button>
+    <button class="btn btn-g" data-action="clear">Clear</button>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════
+   RENDER + HELPERS
+═══════════════════════════════════════════════════ */
+function render(){
+  const main=document.getElementById('main');
+  switch(state.tab){
+    case 'vault':    main.innerHTML=renderVault(); break;
+    case 'missions': main.innerHTML=renderMissions(); break;
+    default:         main.innerHTML=renderRandomizer(); break;
+  }
+}
+function esc(s=''){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+/* ═══════════════════════════════════════════════════
+   EVENTS
+═══════════════════════════════════════════════════ */
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    state.tab=btn.dataset.tab;
+    state.showMissionForm=false;
+    render();
+  });
+});
+
+document.getElementById('main').addEventListener('click',e=>{
+  const el=e.target.closest('[data-action]');
+  if(!el) return;
+  const action=el.dataset.action;
+
+  if(action==='roll'){
+    state.rolling=true; state.result=null; render();
+    setTimeout(()=>{
+      const all=[...MISSIONS,...state.customMissions];
+      state.result=all[Math.floor(Math.random()*all.length)];
+      state.rolling=false; render();
+    },650);
+  }
+  if(action==='clear'){state.result=null;render();}
+  if(action==='add-terrain'){
+    const name=document.getElementById('t-name').value.trim();
+    if(!name) return;
+    const type=document.getElementById('t-type').value;
+    const size=document.getElementById('t-size').value;
+    const qty=Math.max(1,parseInt(document.getElementById('t-qty').value)||1);
+    const notes=document.getElementById('t-notes').value.trim();
+    state.terrain.push({id:Date.now(),name,type,size,qty,notes});
+    save(); render();
+  }
+  if(action==='del-terrain'){state.terrain=state.terrain.filter(t=>String(t.id)!==el.dataset.id);save();render();}
+  if(action==='show-mission-form'){state.showMissionForm=true;render();}
+  if(action==='cancel-mission'){state.showMissionForm=false;render();}
+  if(action==='save-mission'){
+    const name=document.getElementById('m-name').value.trim();
+    if(!name) return;
+    const deployment=document.getElementById('m-deploy').value;
+    const description=document.getElementById('m-desc').value.trim();
+    const primary=document.getElementById('m-primary').value.trim();
+    const secondaries=document.getElementById('m-secondaries').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const terrainNote=document.getElementById('m-terrain').value.trim()||'Set up terrain as suits this mission.';
+    state.customMissions.push({
+      id:'custom-'+Date.now(), name, source:'custom', deployment, description, primary, secondaries,
+      cadence:[], slots:[{pos:'Board Setup',pref:'ruins',rot:0,detail:terrainNote}],
+      objectives:[{x:.5,y:.5},{x:.25,y:.25},{x:.75,y:.75}],
+    });
+    state.showMissionForm=false; save(); render();
+  }
+  if(action==='del-mission'){state.customMissions=state.customMissions.filter(m=>String(m.id)!==el.dataset.id);save();render();}
+});
+
+document.getElementById('main').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.id==='t-name') document.querySelector('[data-action="add-terrain"]')?.click();
+});
+
+// After vault tab renders, set default size to match initial type selection
+document.getElementById('main').addEventListener('change',e=>{
+  if(e.target.id==='t-type') updateDefaultSize(e.target.value);
+});
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+load();
+render();
+</script>
+</body>
+</html>
